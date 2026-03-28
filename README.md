@@ -204,6 +204,20 @@ aws lambda update-function-configuration \
 
 ---
 
+## Future Extensions
+
+The current agent handles the first touch — it receives a lead and sends one personalised reply. The natural next step is to close the loop on the full sales conversation:
+
+- **Multi-turn follow-up** — track conversation history per lead and continue the email thread, answering follow-up questions automatically without human involvement
+- **Lead qualification** — score replies based on intent signals (budget, timeline, urgency) and escalate hot leads to a human only when they are ready to close
+- **Human handoff** — when the agent detects buying intent or a question it cannot confidently answer, notify a sales rep via Slack or CRM task rather than risking a bad reply
+- **Reply parsing** — parse inbound email replies (via Gmail API or an inbound webhook) and feed them back into the agent to keep the conversation going
+- **CRM enrichment** — write back conversation summaries, lead scores, and next-step notes directly into the CRM contact record after each exchange
+
+The goal: the agent nurtures every lead from first contact to sales-ready, and only hands off to a human when it's time to close.
+
+---
+
 ## Tech Stack
 
 | Component | Technology |
