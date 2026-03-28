@@ -8,7 +8,6 @@ provider:
   name: aws
   runtime: python3.13
   region: ${env:AWS_REGION, "us-east-1"}
-  profile: hubbase-product
   architecture: arm64
   memorySize: 512
   timeout: 29
