@@ -2,7 +2,9 @@
 
 An AI-powered sales agent that responds to inbound leads automatically.
 
-When a lead submits a form in HubSpot, this agent:
+Works with **any CRM or lead source** that supports outbound webhooks — Salesforce, Pipedrive, Zoho, or a plain HTML form. The demo is built using **HubSpot Workflows**, but swapping the trigger is just a matter of pointing a different webhook at the same endpoint.
+
+When a lead comes in, this agent:
 1. Receives the contact via webhook
 2. Retrieves relevant context from your indexed website (HydraDB)
 3. Drafts a personalised reply using Kimi K2 (GMI Cloud)
