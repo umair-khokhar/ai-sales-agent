@@ -16,6 +16,7 @@ GMAIL_USER        = os.environ["GMAIL_USER"]
 GMAIL_PASSWORD    = os.environ["GMAIL_PASSWORD"]
 GMAIL_SENDER_NAME = os.environ.get("GMAIL_SENDER_NAME", GMAIL_USER)
 GMAIL_SIGNATURE   = os.environ.get("GMAIL_SIGNATURE", "").replace("\\n", "\n")
+GMAIL_CC          = [a.strip() for a in os.environ.get("GMAIL_CC", "").split(",") if a.strip()]
 GMAIL_SMTP        = "smtp.gmail.com"
 GMAIL_PORT        = 587
 
@@ -61,12 +62,16 @@ def send_email(to_addr: str, subject: str, body: str) -> None:
     msg["Subject"] = f"Re: Your {AGENCY_NAME} Query — {subject}"
     msg["From"]    = f"{GMAIL_SENDER_NAME} <{GMAIL_USER}>"
     msg["To"]      = to_addr
+    if GMAIL_CC:
+        msg["Cc"] = ", ".join(GMAIL_CC)
+
+    recipients = [to_addr] + GMAIL_CC
 
     with smtplib.SMTP(GMAIL_SMTP, GMAIL_PORT) as server:
         server.ehlo()
         server.starttls()
         server.login(GMAIL_USER, GMAIL_PASSWORD)
-        server.sendmail(GMAIL_USER, to_addr, msg.as_string())
+        server.sendmail(GMAIL_USER, recipients, msg.as_string())
 
 
 def parse_hubspot_contact(payload: Any) -> tuple[str, str, str]:
