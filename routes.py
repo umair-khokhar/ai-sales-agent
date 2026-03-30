@@ -9,7 +9,7 @@ from mangum import Mangum
 from pydantic import BaseModel
 
 from helpers import extract_queries, recall_context, TENANT_ID
-from utils import call_gmi, send_email, parse_hubspot_contact, GMI_MODEL, AGENCY_NAME, AGENCY_URL, AGENCY_TAGLINE, AGENCY_CALENDAR, GMAIL_SENDER_NAME
+from utils import call_gmi, send_email, parse_hubspot_contact, GMI_MODEL, AGENCY_NAME, AGENCY_URL, AGENCY_TAGLINE, AGENCY_CALENDAR
 
 app = FastAPI(title="AI Sales Agent")
 
@@ -32,7 +32,7 @@ Write a warm, professional reply email to a prospect based on the context below.
 - Address the prospect by first name
 - Answer their specific question using the context
 - Include relevant pricing ranges if available in the context
-- End with a clear CTA to book a consultation{f", including this calendar link: {AGENCY_CALENDAR}" if AGENCY_CALENDAR else ""}
+- End with 2-3 short follow-up questions to better understand their needs (timeline, budget, current setup, or scale) — keep them conversational, not like a form
 - Do NOT include a sign-off or signature — it will be added automatically
 
 Prospect name: {{name}}
@@ -44,7 +44,7 @@ Context from {AGENCY_NAME} website:
 
 Return only the email body (no Subject line, no sign-off).
 Write in plain text only — no markdown, no asterisks for bold, no bullet symbols, no numbered lists.
-Use short paragraphs separated by blank lines. For lists, write them as natural sentences or use a dash followed by a space."""
+Use short paragraphs separated by blank lines."""
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 class WebhookRequest(BaseModel):
