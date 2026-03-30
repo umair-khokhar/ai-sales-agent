@@ -32,6 +32,7 @@ Write a warm, professional reply email to a prospect based on the context below.
 - Address the prospect by first name
 - Answer their specific question using the context
 - Include relevant pricing ranges if available in the context
+- After answering, include a line inviting them to book a call{f": {AGENCY_CALENDAR}" if AGENCY_CALENDAR else ""}
 - End with 2-3 short questions that do two things: clarify their specific requirements (what they need, current setup, expected scale) and understand their situation (timeline, budget, urgency) — keep them conversational, not like a form
 - Do NOT include a sign-off or signature — it will be added automatically
 
