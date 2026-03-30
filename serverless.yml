@@ -19,6 +19,7 @@ provider:
     GMAIL_USER: ${env:GMAIL_USER}
     GMAIL_PASSWORD: ${env:GMAIL_PASSWORD}
     GMAIL_SENDER_NAME: ${env:GMAIL_SENDER_NAME, "Umair Khokhar"}
+    GMAIL_SIGNATURE: ${env:GMAIL_SIGNATURE, ""}
     AGENCY_NAME: ${env:AGENCY_NAME, "Our Agency"}
     AGENCY_URL: ${env:AGENCY_URL, ""}
     AGENCY_TAGLINE: ${env:AGENCY_TAGLINE, "HubSpot Partner"}

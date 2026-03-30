@@ -15,6 +15,7 @@ GMI_MODEL     = "moonshotai/Kimi-K2-Instruct-0905"
 GMAIL_USER        = os.environ["GMAIL_USER"]
 GMAIL_PASSWORD    = os.environ["GMAIL_PASSWORD"]
 GMAIL_SENDER_NAME = os.environ.get("GMAIL_SENDER_NAME", GMAIL_USER)
+GMAIL_SIGNATURE   = os.environ.get("GMAIL_SIGNATURE", "").replace("\\n", "\n")
 GMAIL_SMTP        = "smtp.gmail.com"
 GMAIL_PORT        = 587
 
@@ -53,7 +54,10 @@ def strip_markdown(text: str) -> str:
 
 
 def send_email(to_addr: str, subject: str, body: str) -> None:
-    msg = MIMEText(strip_markdown(body), "plain")
+    plain = strip_markdown(body)
+    if GMAIL_SIGNATURE:
+        plain = f"{plain}\n\n{GMAIL_SIGNATURE}"
+    msg = MIMEText(plain, "plain")
     msg["Subject"] = f"Re: Your {AGENCY_NAME} Query — {subject}"
     msg["From"]    = f"{GMAIL_SENDER_NAME} <{GMAIL_USER}>"
     msg["To"]      = to_addr
