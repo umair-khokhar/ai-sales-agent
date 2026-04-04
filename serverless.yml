@@ -7,6 +7,7 @@ useDotenv: true
 provider:
   name: aws
   runtime: python3.13
+  profile: hubbase-product
   region: ${env:AWS_REGION, "us-east-1"}
   architecture: arm64
   memorySize: 512
@@ -25,6 +26,12 @@ provider:
     AGENCY_URL: ${env:AGENCY_URL, ""}
     AGENCY_TAGLINE: ${env:AGENCY_TAGLINE, "HubSpot Partner"}
     AGENCY_CALENDAR_URL: ${env:AGENCY_CALENDAR_URL, ""}
+    HUBSPOT_APP_ID: ${env:HUBSPOT_APP_ID, ""}
+    HUBSPOT_CLIENT_ID: ${env:HUBSPOT_CLIENT_ID, ""}
+    HUBSPOT_DEVELOPER_API_KEY: ${env:HUBSPOT_DEVELOPER_API_KEY, ""}
+    HUBSPOT_CLIENT_SECRET: ${env:HUBSPOT_CLIENT_SECRET, ""}
+    HUBSPOT_REDIRECT_URI: ${env:HUBSPOT_REDIRECT_URI, ""}
+    LAMBDA_URL: ${env:LAMBDA_URL, ""}
 
 functions:
   api:

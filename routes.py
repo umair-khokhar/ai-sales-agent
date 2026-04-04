@@ -1,5 +1,6 @@
 """FastAPI route definitions."""
 
+import json
 import logging
 import os
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
@@ -9,6 +10,7 @@ from mangum import Mangum
 from pydantic import BaseModel
 
 from helpers import extract_queries, recall_context, TENANT_ID
+from hubspot_app import verify_hubspot_signature
 from utils import call_gmi, send_email, parse_hubspot_contact, GMI_MODEL, AGENCY_NAME, AGENCY_URL, AGENCY_TAGLINE, AGENCY_CALENDAR
 
 app = FastAPI(title="AI Sales Agent")
@@ -107,6 +109,82 @@ async def webhook(req: WebhookRequest):
         raise HTTPException(status_code=502, detail=f"GMI error: {e}")
 
     return WebhookResponse(answer=answer, sources=sources, model=GMI_MODEL)
+
+
+@app.post("/hubspot/action")
+async def hubspot_action(request: Request):
+    body_bytes = await request.body()
+    body_str   = body_bytes.decode()
+
+    sig       = request.headers.get("X-HubSpot-Signature-v3", "")
+    timestamp = request.headers.get("X-HubSpot-Request-Timestamp", "")
+    lambda_url = os.environ.get("LAMBDA_URL", "").rstrip("/")
+    url       = f"{lambda_url}/hubspot/action" if lambda_url else str(request.url)
+
+    if not verify_hubspot_signature("POST", url, body_str, timestamp, sig):
+        raise HTTPException(status_code=400, detail="Invalid or expired HubSpot signature")
+
+    payload     = json.loads(body_str)
+    input_fields = payload.get("inputFields", {})
+
+    email    = input_fields.get("email", "")
+    name     = " ".join(filter(None, [input_fields.get("firstname", ""), input_fields.get("lastname", "")])) or "there"
+    inquiry  = input_fields.get("message", "integration services and pricing")
+
+    if not email:
+        raise HTTPException(status_code=400, detail="email is required in inputFields")
+
+    queries          = extract_queries(inquiry)
+    context, _       = recall_context(queries, top_k=10)
+
+    draft = call_gmi("", EMAIL_DRAFT_PROMPT.format(
+        name=name, email=email, inquiry=inquiry, context=context,
+    ))
+
+    subject = call_gmi(
+        "",
+        f"Write a concise, professional email subject line (max 10 words) for this inquiry: {inquiry}\nReturn only the subject line.",
+    ).strip().strip('"')
+
+    email_sent = False
+    try:
+        send_email(email, subject, draft)
+        email_sent = True
+    except Exception as e:
+        logger.error("Failed to send email to %s: %s", email, e)
+
+    return {"outputFields": {"email_sent": str(email_sent).lower(), "draft": draft}}
+
+
+@app.get("/hubspot/callback")
+async def hubspot_oauth_callback(code: str = Query(...)):
+    """OAuth callback — exchanges the HubSpot authorization code for an access token."""
+    client_id     = os.environ.get("HUBSPOT_CLIENT_ID", "")
+    client_secret = os.environ.get("HUBSPOT_CLIENT_SECRET", "")
+    redirect_uri  = os.environ.get("HUBSPOT_REDIRECT_URI", "http://localhost:3000/hubspot/callback")
+
+    if not all([client_id, client_secret]):
+        raise HTTPException(status_code=500, detail="Missing HUBSPOT_CLIENT_ID or HUBSPOT_CLIENT_SECRET env vars")
+
+    import httpx
+
+    token_resp = httpx.post(
+        "https://api.hubapi.com/oauth/v1/token",
+        data={
+            "grant_type":    "authorization_code",
+            "client_id":     client_id,
+            "client_secret": client_secret,
+            "redirect_uri":  redirect_uri,
+            "code":          code,
+        },
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        timeout=15,
+    )
+    if token_resp.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Token exchange failed: {token_resp.text}")
+
+    logger.info("OAuth install complete for portal.")
+    return {"status": "ok", "message": "App installed successfully."}
 
 
 @app.get("/health")
