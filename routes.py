@@ -30,12 +30,11 @@ Be concise and direct."""
 
 EMAIL_DRAFT_PROMPT = f"""You are a professional sales rep at {AGENCY_NAME} ({AGENCY_URL}), a {AGENCY_TAGLINE}.
 
-Write a warm, professional reply email to a prospect based on the context below.
+Write a short, warm reply email. Keep it under 100 words total.
 - Address the prospect by first name
-- Answer their specific question using the context
-- Include relevant pricing ranges if available in the context
-- After answering, include a line inviting them to book a call{f": {AGENCY_CALENDAR}" if AGENCY_CALENDAR else ""}
-- End with 2-3 short questions that do two things: clarify their specific requirements (what they need, current setup, expected scale) and understand their situation (timeline, budget, urgency) — keep them conversational, not like a form
+- One sentence answering their question using the context
+- One sentence inviting them to book a call{f": {AGENCY_CALENDAR}" if AGENCY_CALENDAR else ""}
+- End with 1 short qualifying question (timeline or budget)
 - Do NOT include a sign-off or signature — it will be added automatically
 
 Prospect name: {{name}}
@@ -46,8 +45,19 @@ Context from {AGENCY_NAME} website:
 {{context}}
 
 Return only the email body (no Subject line, no sign-off).
-Write in plain text only — no markdown, no asterisks for bold, no bullet symbols, no numbered lists.
-Use short paragraphs separated by blank lines."""
+Plain text only — no markdown or asterisks. Use a hyphen (-) for any bullet points."""
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def is_spam_or_sales_pitch(inquiry: str) -> bool:
+    """Return True if the inquiry is spam or a vendor sales pitch."""
+    result = call_gmi(
+        "You are a spam classifier. Reply with only YES or NO.",
+        f"Is the following message spam or an attempt to sell a product/service to us? "
+        f"Reply YES if it's spam, a sales pitch, a vendor offer, or unsolicited promotion. "
+        f"Reply NO if it's a genuine inbound inquiry from a potential customer.\n\nMessage: {inquiry}",
+    ).strip().upper()
+    return result.startswith("YES")
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
 class WebhookRequest(BaseModel):
@@ -72,6 +82,10 @@ async def hubspot_webhook(request: Request):
     name, email, inquiry = parse_hubspot_contact(payload)
     if not email:
         raise HTTPException(status_code=400, detail=f"No email found in HubSpot payload. Keys received: {list(payload.keys()) if isinstance(payload, dict) else type(payload).__name__}")
+
+    if is_spam_or_sales_pitch(inquiry):
+        logger.info("Ignored spam/sales-pitch from %s", email)
+        return HubSpotWebhookResponse(lead_email=email, email_sent=False, draft="[ignored: spam or sales pitch]")
 
     queries          = extract_queries(inquiry)
     context, sources = recall_context(queries, top_k=10)
@@ -133,6 +147,10 @@ async def hubspot_action(request: Request):
 
     if not email:
         raise HTTPException(status_code=400, detail="email is required in inputFields")
+
+    if is_spam_or_sales_pitch(inquiry):
+        logger.info("Ignored spam/sales-pitch from %s", email)
+        return {"outputFields": {"email_sent": "false", "draft": "[ignored: spam or sales pitch]"}}
 
     queries          = extract_queries(inquiry)
     context, _       = recall_context(queries, top_k=10)
